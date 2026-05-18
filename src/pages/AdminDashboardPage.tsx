@@ -31,7 +31,10 @@ interface DriverRequest {
   city: string;
   vehicleType: string;
   experience: string;
-  status: 'pending' | 'approved' | 'rejected';
+  profileImage?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'pending_verification';
+  docsStatus: 'pending' | 'approved' | 'rejected';
+  isDocsVerified?: number | boolean;
   submittedAt: string;
   documents?: {
     license: boolean;
@@ -51,80 +54,31 @@ const AdminDashboardPage: React.FC = () => {
   const [totalDriversCount, setTotalDriversCount] = useState(0);
   const [limit] = useState(10);
 
-  // Mock data - in production, this would come from an API
-  const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([
-    {
-      id: '1',
-      name: 'Rajesh Kumar',
-      email: 'rajesh.kumar@email.com',
-      phone: '+91 98765 43210',
-      city: 'Ahmedabad',
-      vehicleType: 'sedan',
-      experience: '5-10',
-      status: 'pending',
-      submittedAt: '2024-03-15T10:30:00Z',
-      documents: { license: true, registration: true, insurance: false }
-    },
-    {
-      id: '2',
-      name: 'Amit Sharma',
-      email: 'amit.sharma@email.com',
-      phone: '+91 87654 32109',
-      city: 'Surat',
-      vehicleType: 'bike',
-      experience: '2-5',
-      status: 'approved',
-      submittedAt: '2024-03-14T15:45:00Z',
-      documents: { license: true, registration: true, insurance: true }
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      email: 'priya.patel@email.com',
-      phone: '+91 76543 21098',
-      city: 'Vadodara',
-      vehicleType: 'auto',
-      experience: '10+',
-      status: 'pending',
-      submittedAt: '2024-03-13T09:15:00Z',
-      documents: { license: true, registration: false, insurance: true }
-    },
-    {
-      id: '4',
-      name: 'Suresh Mehta',
-      email: 'suresh.mehta@email.com',
-      phone: '+91 65432 10987',
-      city: 'Rajkot',
-      vehicleType: 'suv',
-      experience: '5-10',
-      status: 'rejected',
-      submittedAt: '2024-03-12T14:20:00Z',
-      documents: { license: false, registration: true, insurance: true }
-    },
-    {
-      id: '5',
-      name: 'Neha Singh',
-      email: 'neha.singh@email.com',
-      phone: '+91 54321 09876',
-      city: 'Gandhinagar',
-      vehicleType: 'bike',
-      experience: '2-5',
-      status: 'pending',
-      submittedAt: '2024-03-11T11:30:00Z',
-      documents: { license: true, registration: true, insurance: true }
-    }
-  ]);
+  const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([]);
 
   const stats = {
     totalDrivers: totalDriversCount || driverRequests.length,
-    pendingRequests: driverRequests.filter(req => req.status === 'pending').length
+    docsPending: driverRequests.filter(req => req.docsStatus === 'pending').length,
+    awaitingApproval: driverRequests.filter(req => req.status === 'pending' && req.docsStatus === 'approved').length
   };
 
   const fetchDrivers = React.useCallback(async () => {
     try {
       const response = await adminService.getDriverList(currentPage, limit);
       let driversList: any[] = [];
-      if (response && response.data && Array.isArray(response.data)) {
+      
+      const resData = response?.data as any;
+      if (resData && Array.isArray(resData.drivers)) {
+        driversList = resData.drivers;
+        if (resData.totalPages) setTotalPages(resData.totalPages);
+        else if (resData.totalCount) {
+          setTotalDriversCount(resData.totalCount);
+          setTotalPages(Math.ceil(resData.totalCount / limit));
+        } else if (resData.total) {
+          setTotalDriversCount(resData.total);
+          setTotalPages(Math.ceil(resData.total / limit));
+        }
+      } else if (response && response.data && Array.isArray(response.data)) {
         driversList = response.data;
         if (response.totalPages) setTotalPages(response.totalPages);
         else if (response.total) setTotalPages(Math.ceil(response.total / limit));
@@ -134,22 +88,23 @@ const AdminDashboardPage: React.FC = () => {
         driversList = response;
       }
 
-      if (driversList.length > 0) {
-        setDriverRequests(driversList.map((d: any) => ({
-          ...d,
-          id: d.id?.toString() || Math.random().toString(),
-          backendId: d.id,
-          name: d.name || 'Unknown Driver',
-          email: d.email || 'N/A',
-          phone: d.phone || 'N/A',
-          city: d.city || 'N/A',
-          vehicleType: d.vehicleType || 'unknown',
-          experience: d.experience || '0',
-          status: d.status === 1 ? 'approved' : (d.status === 2 || d.status === 0 ? 'rejected' : 'pending'),
-          submittedAt: d.submittedAt || d.created_at || new Date().toISOString(),
-          documents: d.documents || { license: false, registration: false, insurance: false }
-        })));
-      }
+      setDriverRequests(driversList.map((d: any) => ({
+        ...d,
+        id: d.id?.toString() || Math.random().toString(),
+        backendId: d.id,
+        name: d.full_name || d.name || 'Unknown Driver',
+        email: d.email || 'N/A',
+        phone: d.mobile || d.phone || 'N/A',
+        city: d.city || '',
+        vehicleType: d.ride_type || d.vehicleType || 'unknown',
+        experience: d.experience || '0',
+        profileImage: d.profile_image || null,
+        status: d.status === 1 ? 'approved' : (d.status === 2 ? 'rejected' : 'pending'),
+        docsStatus: d.is_docs_verified === 1 ? 'approved' : (d.is_docs_verified === 2 ? 'rejected' : 'pending'),
+        isDocsVerified: d.is_docs_verified === 1 || d.is_docs_verified === true,
+        submittedAt: d.submittedAt || d.created_at || new Date().toISOString(),
+        documents: d.documents || { license: false, registration: false, insurance: false }
+      })));
     } catch (error: any) {
       toast.error('Failed to load drivers: ' + (error.message || 'Unknown error'));
     }
@@ -263,7 +218,7 @@ const AdminDashboardPage: React.FC = () => {
     const matchesSearch = request.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          request.phone.includes(searchTerm);
-    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || request.docsStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -281,8 +236,13 @@ const AdminDashboardPage: React.FC = () => {
     switch (status) {
       case 'approved': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
+      case 'pending_verification': return 'bg-orange-100 text-orange-800';
       default: return 'bg-yellow-100 text-yellow-800';
     }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   return (
@@ -339,7 +299,7 @@ const AdminDashboardPage: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -355,11 +315,23 @@ const AdminDashboardPage: React.FC = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Clock className="h-8 w-8 text-yellow-600" />
+                    <Clock className="h-8 w-8 text-orange-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Pending Requests (Current Page)</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.pendingRequests}</p>
+                    <p className="text-sm font-medium text-gray-500">Docs Pending</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stats.docsPending}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Awaiting Approval</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stats.awaitingApproval}</p>
                   </div>
                 </div>
               </div>
@@ -376,18 +348,24 @@ const AdminDashboardPage: React.FC = () => {
                     <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
-                          <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-purple-600" />
-                          </div>
+                          {request.profileImage ? (
+                            <img src={request.profileImage} alt={request.name} className="h-10 w-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                              <Users className="h-5 w-5 text-purple-600" />
+                            </div>
+                          )}
                         </div>
                         <div className="ml-4">
                           <p className="text-sm font-medium text-gray-900">{request.name}</p>
-                          <p className="text-sm text-gray-500">{request.city} • {request.vehicleType}</p>
+                          <p className="text-sm text-gray-500">
+                            {[request.city, request.vehicleType !== 'unknown' ? request.vehicleType : ''].filter(Boolean).join(' • ')}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.docsStatus)}`}>
+                          Docs: {formatStatus(request.docsStatus)}
                         </span>
                         <span className="text-sm text-gray-500">{formatDate(request.submittedAt)}</span>
                       </div>
@@ -420,10 +398,10 @@ const AdminDashboardPage: React.FC = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="all">All Doc Status</option>
+                  <option value="pending">Docs Pending</option>
+                  <option value="approved">Docs Approved</option>
+                  <option value="rejected">Docs Rejected</option>
                 </select>
                 <button 
                   onClick={handleExport}
@@ -455,7 +433,7 @@ const AdminDashboardPage: React.FC = () => {
                         Vehicle
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        Docs
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Submitted
@@ -471,13 +449,17 @@ const AdminDashboardPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5 text-purple-600" />
-                              </div>
+                              {request.profileImage ? (
+                                <img src={request.profileImage} alt={request.name} className="h-10 w-10 rounded-full object-cover" />
+                              ) : (
+                                <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                  <Users className="h-5 w-5 text-purple-600" />
+                                </div>
+                              )}
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">{request.name}</div>
-                              <div className="text-sm text-gray-500">{request.city}</div>
+                              {request.city && <div className="text-sm text-gray-500">{request.city}</div>}
                             </div>
                           </div>
                         </td>
@@ -490,8 +472,8 @@ const AdminDashboardPage: React.FC = () => {
                           <div className="text-sm text-gray-500">{request.experience} years exp</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.docsStatus)}`}>
+                            {formatStatus(request.docsStatus)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -506,7 +488,7 @@ const AdminDashboardPage: React.FC = () => {
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </button>
-                            {request.status === 'pending' && (
+                            {request.status === 'pending' && request.docsStatus === 'approved' && (
                               <>
                                 <button
                                   onClick={() => handleApproveRequest(request.id, request.backendId)}
@@ -587,10 +569,18 @@ const AdminDashboardPage: React.FC = () => {
               <div className="space-y-6">
                 {/* Personal Information */}
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    Personal Information
-                  </h4>
+                  <div className="flex items-center mb-4">
+                    {selectedRequest.profileImage ? (
+                      <img src={selectedRequest.profileImage} alt={selectedRequest.name} className="h-12 w-12 rounded-full object-cover mr-3" />
+                    ) : (
+                      <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <Users className="h-6 w-6 text-purple-600" />
+                      </div>
+                    )}
+                    <h4 className="font-semibold text-gray-900 flex items-center m-0">
+                      Personal Information
+                    </h4>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-500">Name</p>
@@ -665,19 +655,27 @@ const AdminDashboardPage: React.FC = () => {
 
                 {/* Status and Actions */}
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3">Current Status</h4>
-                  <div className="flex items-center justify-between">
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
-                      {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Submitted: {formatDate(selectedRequest.submittedAt)}
-                    </span>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Overall Status</p>
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
+                        {formatStatus(selectedRequest.status)}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Document Status</p>
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(selectedRequest.docsStatus)}`}>
+                        {formatStatus(selectedRequest.docsStatus)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Submitted: {formatDate(selectedRequest.submittedAt)}
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                {selectedRequest.status === 'pending' && (
+                {selectedRequest.status === 'pending' && selectedRequest.docsStatus === 'approved' && (
                   <div className="flex gap-4">
                     <button
                       onClick={() => handleApproveRequest(selectedRequest.id, selectedRequest.backendId)}

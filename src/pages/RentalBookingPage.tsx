@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Car, Bike, Upload, Phone, CheckCircle, AlertCircle, User, CreditCard, ChevronDown, Search, Calendar, Clock } from 'lucide-react';
+import { MapPin, Car, Bike, Upload, Phone, CheckCircle, User, CreditCard, ChevronDown, Calendar, Clock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import emailjs from '@emailjs/browser';
 
@@ -342,21 +342,16 @@ const RentalBookingPage: React.FC = () => {
       const selectedModel = getCurrentModels().find(model => model.id === bookingData.specificModel);
       const selectedCategory = getCurrentCategories().find(cat => cat.id === bookingData.vehicleCategory);
 
-      // Convert files to base64 if they exist
-      let licenseBase64 = '';
-      let aadharBase64 = '';
-
       if (bookingData.licenseImage) {
-        licenseBase64 = await convertFileToBase64(bookingData.licenseImage);
+        await convertFileToBase64(bookingData.licenseImage);
       }
 
       if (bookingData.aadharImage) {
-        aadharBase64 = await convertFileToBase64(bookingData.aadharImage);
+        await convertFileToBase64(bookingData.aadharImage);
       }
 
       const emailParams = {
         logoUrl: `${window.location.origin}/kuber-cab-sb.png`,
-        logoUrl: 'https://your-domain.com/kuber-cab-logo.png', // Update with your actual logo URL
         name: 'Customer', // You can add a name field to the form
         type: bookingData.vehicleType === 'car' ? 'Car Rental' : 'Bike Rental',
         vehicleName: `${selectedCategory?.name || ''} - ${selectedModel?.name || ''}`,
