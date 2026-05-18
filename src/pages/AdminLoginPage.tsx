@@ -2,40 +2,43 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Lock, User } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { adminService } from '../services/adminService';
+import { setAuthToken } from '../services/apiClient';
 
 const AdminLoginPage: React.FC = () => {
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Demo credentials - in production, this should be handled by a proper backend
-  const ADMIN_CREDENTIALS = {
-    username: 'admin',
-    password: 'kubercab2024'
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await adminService.login({
+        email: credentials.email,
+        password: credentials.password
+      });
+      
+      const token = response.token || response.access_token || response?.data?.token || response?.data?.access_token;
 
-    if (credentials.username === ADMIN_CREDENTIALS.username && 
-        credentials.password === ADMIN_CREDENTIALS.password) {
-      // Store admin session
-      localStorage.setItem('kubercab_admin_token', 'admin_authenticated');
-      toast.success('Login successful!');
-      navigate('/admin/dashboard');
-    } else {
-      toast.error('Invalid credentials. Please try again.');
+      if (token) {
+        setAuthToken(token);
+        toast.success(response.message || response?.data?.message || 'Login successful!');
+        navigate('/admin/dashboard');
+      } else {
+        toast.error(response.message || response?.data?.message || 'Login successfully done, but no token was provided in the response.');
+        console.log('Login response without token:', response);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -57,17 +60,17 @@ const AdminLoginPage: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+                Email
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
-                  type="text"
+                  type="email"
                   required
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  placeholder="Enter your username"
-                  value={credentials.username}
-                  onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
+                  placeholder="Enter your email"
+                  value={credentials.email}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, email: e.target.value }))}
                 />
               </div>
             </div>
@@ -109,12 +112,6 @@ const AdminLoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Demo Credentials Info */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-sm font-medium mb-2">Demo Credentials:</p>
-            <p className="text-blue-700 text-sm">Username: admin</p>
-            <p className="text-blue-700 text-sm">Password: kubercab2024</p>
-          </div>
         </div>
 
         {/* Footer */}

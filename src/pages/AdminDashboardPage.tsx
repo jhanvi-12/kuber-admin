@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { adminService } from '../services/adminService';
+import { getAuthToken, removeAuthToken } from '../services/apiClient';
 import { 
   Users, 
   Car, 
@@ -22,6 +24,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 interface DriverRequest {
   id: string;
+  backendId?: number;
   name: string;
   email: string;
   phone: string;
@@ -43,6 +46,10 @@ const AdminDashboardPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<DriverRequest | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalDriversCount, setTotalDriversCount] = useState(0);
+  const [limit] = useState(10);
 
   // Mock data - in production, this would come from an API
   const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([
@@ -109,46 +116,147 @@ const AdminDashboardPage: React.FC = () => {
   ]);
 
   const stats = {
-    totalDrivers: 1247,
-    activeDrivers: 1089,
-    pendingRequests: driverRequests.filter(req => req.status === 'pending').length,
-    approvedToday: 12,
-    totalRides: 45678,
-    revenue: 2345678
+    totalDrivers: totalDriversCount || driverRequests.length,
+    pendingRequests: driverRequests.filter(req => req.status === 'pending').length
   };
+
+  const fetchDrivers = React.useCallback(async () => {
+    try {
+      const response = await adminService.getDriverList(currentPage, limit);
+      let driversList: any[] = [];
+      if (response && response.data && Array.isArray(response.data)) {
+        driversList = response.data;
+        if (response.totalPages) setTotalPages(response.totalPages);
+        else if (response.total) setTotalPages(Math.ceil(response.total / limit));
+        
+        if (response.total) setTotalDriversCount(response.total);
+      } else if (Array.isArray(response)) {
+        driversList = response;
+      }
+
+      if (driversList.length > 0) {
+        setDriverRequests(driversList.map((d: any) => ({
+          ...d,
+          id: d.id?.toString() || Math.random().toString(),
+          backendId: d.id,
+          name: d.name || 'Unknown Driver',
+          email: d.email || 'N/A',
+          phone: d.phone || 'N/A',
+          city: d.city || 'N/A',
+          vehicleType: d.vehicleType || 'unknown',
+          experience: d.experience || '0',
+          status: d.status === 1 ? 'approved' : (d.status === 2 || d.status === 0 ? 'rejected' : 'pending'),
+          submittedAt: d.submittedAt || d.created_at || new Date().toISOString(),
+          documents: d.documents || { license: false, registration: false, insurance: false }
+        })));
+      }
+    } catch (error: any) {
+      toast.error('Failed to load drivers: ' + (error.message || 'Unknown error'));
+    }
+  }, [currentPage, limit]);
 
   useEffect(() => {
     // Check if admin is authenticated
-    const token = localStorage.getItem('kubercab_admin_token');
+    const token = getAuthToken();
     if (!token) {
       navigate('/admin/login');
+    } else {
+      fetchDrivers();
     }
-  }, [navigate]);
+  }, [navigate, fetchDrivers]);
 
   const handleLogout = () => {
-    localStorage.removeItem('kubercab_admin_token');
+    removeAuthToken();
     toast.success('Logged out successfully');
     navigate('/admin/login');
   };
 
-  const handleApproveRequest = (id: string) => {
-    setDriverRequests(prev => 
-      prev.map(req => 
-        req.id === id ? { ...req, status: 'approved' as const } : req
-      )
-    );
-    toast.success('Driver request approved!');
-    setSelectedRequest(null);
+  const handleApproveRequest = async (id: string, backendId?: number) => {
+    try {
+      const apiDriverId = backendId !== undefined ? backendId : Number(id);
+      
+      await adminService.approveOrRejectDriver({
+        driver_id: apiDriverId,
+        reason: "Background verification completed successfully",
+        status: 1
+      });
+
+      setDriverRequests(prev => 
+        prev.map(req => 
+          req.id === id ? { ...req, status: 'approved' as const } : req
+        )
+      );
+      toast.success('Driver request approved!');
+      setSelectedRequest(null);
+    } catch (error: any) {
+      toast.error('Failed to approve driver: ' + (error.message || 'Unknown error'));
+    }
   };
 
-  const handleRejectRequest = (id: string) => {
-    setDriverRequests(prev => 
-      prev.map(req => 
-        req.id === id ? { ...req, status: 'rejected' as const } : req
-      )
-    );
-    toast.success('Driver request rejected!');
-    setSelectedRequest(null);
+  const handleRejectRequest = async (id: string, backendId?: number) => {
+    try {
+      const apiDriverId = backendId !== undefined ? backendId : Number(id);
+
+      await adminService.approveOrRejectDriver({
+        driver_id: apiDriverId,
+        reason: "Rejected by admin",
+        status: 2 // Assuming 2 represents rejection
+      });
+
+      setDriverRequests(prev => 
+        prev.map(req => 
+          req.id === id ? { ...req, status: 'rejected' as const } : req
+        )
+      );
+      toast.success('Driver request rejected!');
+      setSelectedRequest(null);
+    } catch (error: any) {
+      toast.error('Failed to reject driver: ' + (error.message || 'Unknown error'));
+    }
+  };
+
+  const handleExport = () => {
+    try {
+      const escapeCsv = (val: any) => {
+        if (val === null || val === undefined) return '""';
+        return `"${String(val).replace(/"/g, '""')}"`;
+      };
+
+      const headers = ['Driver Name', 'City', 'Email', 'Phone', 'Vehicle Type', 'Experience (Years)', 'Status', 'Submitted At'];
+      
+      const csvContent = [
+        // Ensure headers are quoted too to prevent parsing issues
+        headers.map(escapeCsv).join(','),
+        ...driverRequests.map(req => 
+          [
+            escapeCsv(req.name || 'Unknown'),
+            escapeCsv(req.city || 'N/A'),
+            escapeCsv(req.email || 'N/A'),
+            escapeCsv(req.phone || 'N/A'),
+            escapeCsv(req.vehicleType || 'Unknown'),
+            escapeCsv(req.experience || '0'),
+            escapeCsv(req.status || 'Pending'),
+            escapeCsv(formatDate(req.submittedAt || new Date().toISOString()))
+          ].join(',')
+        )
+      ].join('\r\n'); // Use CRLF line breaker for Windows support
+
+      // Explicit byte array for UTF-8 Byte Order Mark forces Excel to recognize characters and delimiters
+      const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const blob = new Blob([BOM, csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'drivers_export.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Export downloaded successfully!');
+    } catch (error) {
+      toast.error('Failed to export data');
+    }
   };
 
   const filteredRequests = driverRequests.filter(request => {
@@ -231,7 +339,7 @@ const AdminDashboardPage: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -247,35 +355,11 @@ const AdminDashboardPage: React.FC = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Car className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Active Drivers</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.activeDrivers.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
                     <Clock className="h-8 w-8 text-yellow-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Pending Requests</p>
+                    <p className="text-sm font-medium text-gray-500">Pending Requests (Current Page)</p>
                     <p className="text-2xl font-semibold text-gray-900">{stats.pendingRequests}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <TrendingUp className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Approved Today</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.approvedToday}</p>
                   </div>
                 </div>
               </div>
@@ -341,7 +425,9 @@ const AdminDashboardPage: React.FC = () => {
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <button className="flex items-center justify-center px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors">
+                <button 
+                  onClick={handleExport}
+                  className="flex items-center justify-center px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors">
                   <Download className="h-5 w-5 mr-2" />
                   Export
                 </button>
@@ -423,14 +509,14 @@ const AdminDashboardPage: React.FC = () => {
                             {request.status === 'pending' && (
                               <>
                                 <button
-                                  onClick={() => handleApproveRequest(request.id)}
+                                  onClick={() => handleApproveRequest(request.id, request.backendId)}
                                   className="text-green-600 hover:text-green-900 flex items-center"
                                 >
                                   <CheckCircle className="h-4 w-4 mr-1" />
                                   Approve
                                 </button>
                                 <button
-                                  onClick={() => handleRejectRequest(request.id)}
+                                  onClick={() => handleRejectRequest(request.id, request.backendId)}
                                   className="text-red-600 hover:text-red-900 flex items-center"
                                 >
                                   <XCircle className="h-4 w-4 mr-1" />
@@ -445,6 +531,39 @@ const AdminDashboardPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing page {currentPage} of {totalPages} {totalDriversCount ? `(Total ${totalDriversCount})` : ''}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`px-4 py-2 border rounded-lg text-sm font-medium ${
+                        currentPage === 1 
+                          ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' 
+                          : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`px-4 py-2 border rounded-lg text-sm font-medium ${
+                        currentPage === totalPages 
+                          ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' 
+                          : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -561,14 +680,14 @@ const AdminDashboardPage: React.FC = () => {
                 {selectedRequest.status === 'pending' && (
                   <div className="flex gap-4">
                     <button
-                      onClick={() => handleApproveRequest(selectedRequest.id)}
+                      onClick={() => handleApproveRequest(selectedRequest.id, selectedRequest.backendId)}
                       className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center"
                     >
                       <CheckCircle className="h-5 w-5 mr-2" />
                       Approve Request
                     </button>
                     <button
-                      onClick={() => handleRejectRequest(selectedRequest.id)}
+                      onClick={() => handleRejectRequest(selectedRequest.id, selectedRequest.backendId)}
                       className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
                     >
                       <XCircle className="h-5 w-5 mr-2" />
