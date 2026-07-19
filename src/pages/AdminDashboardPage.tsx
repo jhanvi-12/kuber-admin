@@ -55,6 +55,34 @@ const AdminDashboardPage: React.FC = () => {
   const [limit] = useState(10);
 
   const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([]);
+  const [actionModal, setActionModal] = useState<{
+    type: 'approve' | 'reject';
+    request: DriverRequest;
+  } | null>(null);
+  const [approveRideType, setApproveRideType] = useState('');
+  const [approveMessage, setApproveMessage] = useState(
+    'Background verification completed successfully'
+  );
+  const [rejectSelectedReasons, setRejectSelectedReasons] = useState<string[]>([]);
+  const [rejectOtherSelected, setRejectOtherSelected] = useState(false);
+  const [rejectOtherComment, setRejectOtherComment] = useState('');
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+
+  const rideTypeOptions = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'moto', label: 'Moto' },
+    { value: 'comfort', label: 'Comfort' },
+    { value: 'xl', label: 'XL' },
+    { value: 'city', label: 'City' },
+  ];
+
+  const defaultRejectReasons = [
+    'Incomplete or unclear documents',
+    'Background verification failed',
+    'Vehicle documents not valid',
+    'Invalid driving license',
+    'Does not meet eligibility criteria',
+  ];
 
   const stats = {
     totalDrivers: totalDriversCount || driverRequests.length,
@@ -88,23 +116,42 @@ const AdminDashboardPage: React.FC = () => {
         driversList = response;
       }
 
-      setDriverRequests(driversList.map((d: any) => ({
-        ...d,
-        id: d.id?.toString() || Math.random().toString(),
-        backendId: d.id,
-        name: d.full_name || d.name || 'Unknown Driver',
-        email: d.email || 'N/A',
-        phone: d.mobile || d.phone || 'N/A',
-        city: d.city || '',
-        vehicleType: d.ride_type || d.vehicleType || 'unknown',
-        experience: d.experience || '0',
-        profileImage: d.profile_image || null,
-        status: d.status === 1 ? 'approved' : (d.status === 2 ? 'rejected' : 'pending'),
-        docsStatus: d.is_docs_verified === 1 ? 'approved' : (d.is_docs_verified === 2 ? 'rejected' : 'pending'),
-        isDocsVerified: d.is_docs_verified === 1 || d.is_docs_verified === true,
-        submittedAt: d.submittedAt || d.created_at || new Date().toISOString(),
-        documents: d.documents || { license: false, registration: false, insurance: false }
-      })));
+      setDriverRequests(driversList.map((d: any) => {
+        const rawStatus = d.status;
+        const rawDocsStatus = d.is_docs_verified;
+
+        const normalizedStatus =
+          rawStatus === 1 || rawStatus === '1' || rawStatus === 'approved'
+            ? 'approved'
+            : rawStatus === 2 || rawStatus === '2' || rawStatus === 'rejected'
+              ? 'rejected'
+              : 'pending';
+
+        const normalizedDocsStatus =
+          rawDocsStatus === 1 || rawDocsStatus === '1' || rawDocsStatus === true || rawDocsStatus === 'approved'
+            ? 'approved'
+            : rawDocsStatus === 2 || rawDocsStatus === '2' || rawDocsStatus === 'rejected'
+              ? 'rejected'
+              : 'pending';
+
+        return {
+          ...d,
+          id: d.id?.toString() || Math.random().toString(),
+          backendId: d.id,
+          name: d.full_name || d.name || 'Unknown Driver',
+          email: d.email || 'N/A',
+          phone: d.mobile || d.phone || 'N/A',
+          city: d.city || '',
+          vehicleType: d.ride_type || d.vehicleType || 'unknown',
+          experience: d.experience || '0',
+          profileImage: d.profile_image || null,
+          status: normalizedStatus,
+          docsStatus: normalizedDocsStatus,
+          isDocsVerified: normalizedDocsStatus === 'approved',
+          submittedAt: d.submittedAt || d.created_at || new Date().toISOString(),
+          documents: d.documents || { license: false, registration: false, insurance: false }
+        };
+      }));
     } catch (error: any) {
       toast.error('Failed to load drivers: ' + (error.message || 'Unknown error'));
     }
@@ -126,47 +173,134 @@ const AdminDashboardPage: React.FC = () => {
     navigate('/admin/login');
   };
 
-  const handleApproveRequest = async (id: string, backendId?: number) => {
+  const openApproveModal = (request: DriverRequest) => {
+    const knownType = rideTypeOptions.some(opt => opt.value === request.vehicleType)
+      ? request.vehicleType
+      : '';
+    setApproveRideType(knownType);
+    setApproveMessage('Background verification completed successfully');
+    setActionModal({ type: 'approve', request });
+  };
+
+  const openRejectModal = (request: DriverRequest) => {
+    setRejectSelectedReasons([]);
+    setRejectOtherSelected(false);
+    setRejectOtherComment('');
+    setActionModal({ type: 'reject', request });
+  };
+
+  const closeActionModal = () => {
+    if (isSubmittingAction) return;
+    setActionModal(null);
+    setApproveRideType('');
+    setApproveMessage('Background verification completed successfully');
+    setRejectSelectedReasons([]);
+    setRejectOtherSelected(false);
+    setRejectOtherComment('');
+  };
+
+  const toggleRejectReason = (reason: string) => {
+    setRejectSelectedReasons(prev =>
+      prev.includes(reason)
+        ? prev.filter(item => item !== reason)
+        : [...prev, reason]
+    );
+  };
+
+  const buildRejectReason = () => {
+    const reasons = [...rejectSelectedReasons];
+    if (rejectOtherSelected && rejectOtherComment.trim()) {
+      reasons.push(rejectOtherComment.trim());
+    }
+    return reasons.join('; ');
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!actionModal || actionModal.type !== 'approve') return;
+
+    if (!approveRideType) {
+      toast.error('Please select a ride type');
+      return;
+    }
+    if (!approveMessage.trim()) {
+      toast.error('Please enter an approval message');
+      return;
+    }
+
+    const { request } = actionModal;
+    const apiDriverId = request.backendId !== undefined ? request.backendId : Number(request.id);
+
     try {
-      const apiDriverId = backendId !== undefined ? backendId : Number(id);
-      
+      setIsSubmittingAction(true);
       await adminService.approveOrRejectDriver({
         driver_id: apiDriverId,
-        reason: "Background verification completed successfully",
-        status: 1
+        reason: approveMessage.trim(),
+        ride_type: approveRideType,
+        status: 1,
       });
 
-      setDriverRequests(prev => 
-        prev.map(req => 
-          req.id === id ? { ...req, status: 'approved' as const } : req
+      setDriverRequests(prev =>
+        prev.map(req =>
+          req.id === request.id
+            ? { ...req, status: 'approved' as const, vehicleType: approveRideType }
+            : req
         )
       );
       toast.success('Driver request approved!');
       setSelectedRequest(null);
+      setActionModal(null);
     } catch (error: any) {
       toast.error('Failed to approve driver: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsSubmittingAction(false);
     }
   };
 
-  const handleRejectRequest = async (id: string, backendId?: number) => {
-    try {
-      const apiDriverId = backendId !== undefined ? backendId : Number(id);
+  const handleConfirmReject = async () => {
+    if (!actionModal || actionModal.type !== 'reject') return;
 
+    if (rejectSelectedReasons.length === 0 && !rejectOtherSelected) {
+      toast.error('Please select at least one rejection reason');
+      return;
+    }
+
+    if (rejectOtherSelected && !rejectOtherComment.trim()) {
+      toast.error('Please enter your custom rejection comment');
+      return;
+    }
+
+    const reason = buildRejectReason();
+    if (!reason) {
+      toast.error('Please provide a rejection comment');
+      return;
+    }
+
+    const { request } = actionModal;
+    const apiDriverId = request.backendId !== undefined ? request.backendId : Number(request.id);
+
+    try {
+      setIsSubmittingAction(true);
       await adminService.approveOrRejectDriver({
         driver_id: apiDriverId,
-        reason: "Rejected by admin",
-        status: 2 // Assuming 2 represents rejection
+        reason,
+        ride_type: request.vehicleType && request.vehicleType !== 'unknown'
+          ? request.vehicleType
+          : '',
+        status: 2,
       });
 
-      setDriverRequests(prev => 
-        prev.map(req => 
-          req.id === id ? { ...req, status: 'rejected' as const } : req
+      setDriverRequests(prev =>
+        prev.map(req =>
+          req.id === request.id ? { ...req, status: 'rejected' as const } : req
         )
       );
       toast.success('Driver request rejected!');
       setSelectedRequest(null);
+      setActionModal(null);
     } catch (error: any) {
       toast.error('Failed to reject driver: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsSubmittingAction(false);
     }
   };
 
@@ -436,6 +570,9 @@ const AdminDashboardPage: React.FC = () => {
                         Docs
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Submitted
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -476,6 +613,11 @@ const AdminDashboardPage: React.FC = () => {
                             {formatStatus(request.docsStatus)}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
+                            {formatStatus(request.status)}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(request.submittedAt)}
                         </td>
@@ -488,23 +630,23 @@ const AdminDashboardPage: React.FC = () => {
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </button>
-                            {request.status === 'pending' && request.docsStatus === 'approved' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveRequest(request.id, request.backendId)}
-                                  className="text-green-600 hover:text-green-900 flex items-center"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRejectRequest(request.id, request.backendId)}
-                                  className="text-red-600 hover:text-red-900 flex items-center"
-                                >
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Reject
-                                </button>
-                              </>
+                            {request.status !== 'approved' && (
+                              <button
+                                onClick={() => openApproveModal(request)}
+                                className="text-green-600 hover:text-green-900 flex items-center"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </button>
+                            )}
+                            {request.status !== 'rejected' && (
+                              <button
+                                onClick={() => openRejectModal(request)}
+                                className="text-red-600 hover:text-red-900 flex items-center"
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Reject
+                              </button>
                             )}
                           </div>
                         </td>
@@ -675,23 +817,175 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                {selectedRequest.status === 'pending' && selectedRequest.docsStatus === 'approved' && (
-                  <div className="flex gap-4">
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  {selectedRequest.status !== 'approved' && (
                     <button
-                      onClick={() => handleApproveRequest(selectedRequest.id, selectedRequest.backendId)}
+                      onClick={() => openApproveModal(selectedRequest)}
                       className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center"
                     >
                       <CheckCircle className="h-5 w-5 mr-2" />
                       Approve Request
                     </button>
+                  )}
+                  {selectedRequest.status !== 'rejected' && (
                     <button
-                      onClick={() => handleRejectRequest(selectedRequest.id, selectedRequest.backendId)}
+                      onClick={() => openRejectModal(selectedRequest)}
                       className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
                     >
                       <XCircle className="h-5 w-5 mr-2" />
                       Reject Request
                     </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve / Reject Action Modal */}
+      {actionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {actionModal.type === 'approve' ? 'Approve Driver' : 'Reject Driver'}
+                </h3>
+                <button
+                  onClick={closeActionModal}
+                  disabled={isSubmittingAction}
+                  className="text-gray-400 hover:text-gray-600 p-2 disabled:opacity-50"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-5">
+                {actionModal.type === 'approve'
+                  ? `Approve request for ${actionModal.request.name}. Select ride type and confirm the message.`
+                  : `Reject request for ${actionModal.request.name}. Select one or more reasons below.`}
+              </p>
+
+              {actionModal.type === 'approve' ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ride Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      value={approveRideType}
+                      onChange={(e) => setApproveRideType(e.target.value)}
+                      disabled={isSubmittingAction}
+                    >
+                      <option value="">Select Ride Type</option>
+                      {rideTypeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Approval Message <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none"
+                      value={approveMessage}
+                      onChange={(e) => setApproveMessage(e.target.value)}
+                      disabled={isSubmittingAction}
+                      placeholder="Enter approval message"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Rejection Reasons <span className="text-red-500">*</span>
+                  </label>
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {defaultRejectReasons.map((reason) => (
+                      <label
+                        key={reason}
+                        className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                          checked={rejectSelectedReasons.includes(reason)}
+                          onChange={() => toggleRejectReason(reason)}
+                          disabled={isSubmittingAction}
+                        />
+                        <span className="text-sm text-gray-700">{reason}</span>
+                      </label>
+                    ))}
+
+                    <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                        checked={rejectOtherSelected}
+                        onChange={(e) => {
+                          setRejectOtherSelected(e.target.checked);
+                          if (!e.target.checked) setRejectOtherComment('');
+                        }}
+                        disabled={isSubmittingAction}
+                      />
+                      <span className="text-sm text-gray-700">Other</span>
+                    </label>
+                  </div>
+
+                  {rejectOtherSelected && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Custom Comment <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                        value={rejectOtherComment}
+                        onChange={(e) => setRejectOtherComment(e.target.value)}
+                        disabled={isSubmittingAction}
+                        placeholder="Enter your rejection comment"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={closeActionModal}
+                  disabled={isSubmittingAction}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                {actionModal.type === 'approve' ? (
+                  <button
+                    type="button"
+                    onClick={handleConfirmApprove}
+                    disabled={isSubmittingAction}
+                    className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {isSubmittingAction ? 'Approving...' : 'Confirm Approve'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleConfirmReject}
+                    disabled={isSubmittingAction}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    {isSubmittingAction ? 'Rejecting...' : 'Confirm Reject'}
+                  </button>
                 )}
               </div>
             </div>

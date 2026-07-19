@@ -15,6 +15,7 @@ import CookiePolicyPage from './pages/CookiePolicyPage';
 import RentalBookingPage from './pages/RentalBookingPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Component to handle scroll to top on route change
 const ScrollToTop: React.FC = () => {
@@ -63,6 +64,7 @@ function App() {
             <Route path="/rental-booking" element={<RentalBookingPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>
       </div>

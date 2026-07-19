@@ -13,6 +13,7 @@ export interface AdminLoginResponse {
 export interface ApproveRejectDriverPayload {
   driver_id: number;
   reason: string;
+  ride_type: string;
   status: number;
 }
 

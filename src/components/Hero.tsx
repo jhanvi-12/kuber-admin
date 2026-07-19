@@ -38,7 +38,7 @@ const Hero: React.FC = () => {
               </a>
             </div>
             
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
+            {/* <div className="flex items-center space-x-4 text-sm text-gray-500">
               <div className="flex items-center">
                 <div className="h-4 w-4 rounded-full bg-green-500 mr-2"></div>
                 <span>4.8/5 Rider Rating</span>
@@ -47,7 +47,7 @@ const Hero: React.FC = () => {
                 <div className="h-4 w-4 rounded-full bg-blue-500 mr-2"></div>
                 <span>10M+ Rides</span>
               </div>
-            </div>
+            </div> */}
           </div>
           
           {/* Hero image */}
