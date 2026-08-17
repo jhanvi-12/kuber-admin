@@ -3,6 +3,7 @@ import {
   AdminLoginPayload, 
   AdminLoginResponse, 
   ApproveRejectDriverPayload, 
+  DriverDetailsResponse,
   DriverListResponse 
 } from '../types/admin';
 
@@ -43,5 +44,12 @@ export const adminService = {
     return apiClient<DriverListResponse>(`v1/driver/list?page=${page}&limit=${limit}`, {
       method: 'GET',
     });
-  }
+  },
+
+  getDriverDetails: (driverId: number): Promise<DriverDetailsResponse> => {
+    return apiClient<DriverDetailsResponse>(
+      `v1/driver/details?driver_id=${encodeURIComponent(driverId)}`,
+      { method: 'GET' }
+    );
+  },
 };
