@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { MapPin, Car, Bike, Upload, Phone, CheckCircle, User, CreditCard, ChevronDown, Calendar, Clock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import emailjs from '@emailjs/browser';
+import DropoffMap from '../components/DropoffMap';
 
 interface BookingData {
   pickupAddress: string;
   dropoffAddress: string;
+  dropoffLat: number | null;
+  dropoffLng: number | null;
   vehicleType: 'car' | 'bike';
   vehicleCategory: string;
-  specificModel: string;
   rentalDuration: string;
   startDate: string;
   isOver21: boolean;
@@ -31,30 +34,20 @@ interface VehicleCategory {
   name: string;
   description: string;
   icon: string;
-  models: VehicleModel[];
-}
-
-interface VehicleModel {
-  id: string;
-  name: string;
-  price: string;
-  originalPrice?: string;
-  discount?: string;
-  features: string[];
-  image: string;
-  isPopular?: boolean;
-  isAvailable?: boolean;
 }
 
 const RentalBookingPage: React.FC = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingData>({
     pickupAddress: '',
     dropoffAddress: '',
+    dropoffLat: null,
+    dropoffLng: null,
     vehicleType: 'car',
     vehicleCategory: '',
-    specificModel: '',
     rentalDuration: '1',
     startDate: '',
     isOver21: false,
@@ -64,240 +57,46 @@ const RentalBookingPage: React.FC = () => {
     aadharImage: null,
   });
 
-  const carCategories: VehicleCategory[] = [
-    {
-      id: 'hatchback',
-      name: 'Hatchback',
-      description: 'Compact cars perfect for city driving',
-      icon: '🚗',
-      models: [
-        {
-          id: 'swift',
-          name: 'Maruti Swift',
-          price: '₹2,200/day',
-          originalPrice: '₹2,750/day',
-          discount: '20% OFF',
-          features: ['Petrol', 'Manual', '5 Seats', 'AC'],
-          image: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isPopular: true,
-          isAvailable: true
-        },
-        {
-          id: 'baleno',
-          name: 'Maruti Baleno',
-          price: '₹2,500/day',
-          originalPrice: '₹3,050/day',
-          discount: '18% OFF',
-          features: ['Petrol', 'Manual', '5 Seats', 'AC'],
-          image: 'https://images.pexels.com/photos/3573382/pexels-photo-3573382.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isPopular: true,
-          isAvailable: true
-        },
-        {
-          id: 'i20',
-          name: 'Hyundai i20',
-          price: '₹2,400/day',
-          originalPrice: '₹2,825/day',
-          discount: '15% OFF',
-          features: ['Petrol', 'Manual', '5 Seats', 'AC'],
-          image: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        },
-        {
-          id: 'tiago',
-          name: 'Tata Tiago',
-          price: '₹2,000/day',
-          originalPrice: '₹2,350/day',
-          discount: '15% OFF',
-          features: ['Petrol', 'Manual', '5 Seats', 'Budget'],
-          image: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        }
-      ]
-    },
-    {
-      id: 'sedan',
-      name: 'Sedan',
-      description: 'Comfortable cars for business and family',
-      icon: '🚙',
-      models: [
-        {
-          id: 'dzire',
-          name: 'Maruti Dzire',
-          price: '₹2,300/day',
-          features: ['Petrol', 'Manual', '5 Seats', 'Sedan'],
-          image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        },
-        {
-          id: 'city',
-          name: 'Honda City',
-          price: '₹2,800/day',
-          features: ['Petrol', 'Manual', '5 Seats', 'Premium'],
-          image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        }
-      ]
-    },
-    {
-      id: 'suv',
-      name: 'SUV',
-      description: 'Spacious vehicles for family trips',
-      icon: '🚐',
-      models: [
-        {
-          id: 'brezza',
-          name: 'Maruti Brezza',
-          price: '₹3,200/day',
-          originalPrice: '₹4,000/day',
-          discount: '20% OFF',
-          features: ['Petrol', 'Manual', '5 Seats', 'SUV'],
-          image: 'https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        },
-        {
-          id: 'creta',
-          name: 'Hyundai Creta',
-          price: '₹3,800/day',
-          features: ['Petrol', 'Manual', '5 Seats', 'SUV'],
-          image: 'https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: false
-        },
-        {
-          id: 'innova',
-          name: 'Toyota Innova',
-          price: '₹4,500/day',
-          features: ['Diesel', 'Manual', '7 Seats', 'AC'],
-          image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        }
-      ]
+  useEffect(() => {
+    const state = location.state as { vehicleType?: 'car' | 'bike' } | null;
+    const typeParam = searchParams.get('type');
+    const vehicleType =
+      state?.vehicleType ?? (typeParam === 'bike' || typeParam === 'car' ? typeParam : null);
+
+    if (vehicleType) {
+      setBookingData((prev) => ({
+        ...prev,
+        vehicleType,
+        vehicleCategory: '',
+      }));
     }
+  }, [location.state, searchParams]);
+
+  const carCategories: VehicleCategory[] = [
+    { id: 'hatchback', name: 'Hatchback', description: 'Compact cars for city driving', icon: '🚗' },
+    { id: 'sedan', name: 'Sedan', description: 'Comfortable cars for business and family', icon: '🚙' },
+    { id: 'suv', name: 'SUV', description: 'Spacious vehicles for family trips', icon: '🚐' },
   ];
 
   const bikeCategories: VehicleCategory[] = [
-    {
-      id: 'scooter',
-      name: 'Scooter',
-      description: 'Easy to ride automatic scooters',
-      icon: '🛵',
-      models: [
-        {
-          id: 'activa-6g',
-          name: 'Honda Activa 6G',
-          price: '₹600/day',
-          originalPrice: '₹800/day',
-          discount: '25% OFF',
-          features: ['110cc', 'Automatic', 'Petrol', 'Storage'],
-          image: 'https://images.pexels.com/photos/1098460/pexels-photo-1098460.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isPopular: true,
-          isAvailable: true
-        },
-        {
-          id: 'jupiter',
-          name: 'TVS Jupiter',
-          price: '₹650/day',
-          originalPrice: '₹845/day',
-          discount: '23% OFF',
-          features: ['110cc', 'Automatic', 'Petrol', 'Comfort'],
-          image: 'https://images.pexels.com/photos/1098460/pexels-photo-1098460.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isPopular: true,
-          isAvailable: true
-        },
-        {
-          id: 'access-125',
-          name: 'Suzuki Access 125',
-          price: '₹700/day',
-          features: ['125cc', 'Automatic', 'Petrol', 'Premium'],
-          image: 'https://images.pexels.com/photos/1098460/pexels-photo-1098460.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        }
-      ]
-    },
-    {
-      id: 'commuter',
-      name: 'Commuter',
-      description: 'Fuel-efficient bikes for daily use',
-      icon: '🏍️',
-      models: [
-        {
-          id: 'splendor-plus',
-          name: 'Hero Splendor Plus',
-          price: '₹550/day',
-          originalPrice: '₹690/day',
-          discount: '20% OFF',
-          features: ['100cc', 'Manual', 'Petrol', 'Mileage King'],
-          image: 'https://images.pexels.com/photos/1624504/pexels-photo-1624504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        },
-        {
-          id: 'passion-pro',
-          name: 'Hero Passion Pro',
-          price: '₹580/day',
-          features: ['110cc', 'Manual', 'Petrol', 'Stylish'],
-          image: 'https://images.pexels.com/photos/1624504/pexels-photo-1624504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        }
-      ]
-    },
-    {
-      id: 'sports',
-      name: 'Sports Bike',
-      description: 'Performance bikes for enthusiasts',
-      icon: '🏁',
-      models: [
-        {
-          id: 'fz-s',
-          name: 'Yamaha FZ-S',
-          price: '₹900/day',
-          features: ['150cc', 'Manual', 'Petrol', 'Sporty'],
-          image: 'https://images.pexels.com/photos/1624504/pexels-photo-1624504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        },
-        {
-          id: 'pulsar-150',
-          name: 'Bajaj Pulsar 150',
-          price: '₹850/day',
-          originalPrice: '₹1,000/day',
-          discount: '15% OFF',
-          features: ['150cc', 'Manual', 'Petrol', 'Performance'],
-          image: 'https://images.pexels.com/photos/1624504/pexels-photo-1624504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: true
-        }
-      ]
-    },
-    {
-      id: 'cruiser',
-      name: 'Cruiser',
-      description: 'Classic bikes for long rides',
-      icon: '🛣️',
-      models: [
-        {
-          id: 'royal-enfield',
-          name: 'Royal Enfield Classic 350',
-          price: '₹1,200/day',
-          features: ['350cc', 'Manual', 'Petrol', 'Classic'],
-          image: 'https://images.pexels.com/photos/1624504/pexels-photo-1624504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          isAvailable: false
-        }
-      ]
-    }
+    { id: 'scooter', name: 'Scooter', description: 'Easy to ride automatic scooters', icon: '🛵' },
+    { id: 'commuter', name: 'Commuter', description: 'Fuel-efficient bikes for daily use', icon: '🏍️' },
+    { id: 'sports', name: 'Sports Bike', description: 'Performance bikes for enthusiasts', icon: '🏁' },
+    { id: 'cruiser', name: 'Cruiser', description: 'Classic bikes for long rides', icon: '🛣️' },
   ];
 
   const getCurrentCategories = () => {
     return bookingData.vehicleType === 'car' ? carCategories : bikeCategories;
   };
 
-  const getCurrentModels = () => {
-    const categories = getCurrentCategories();
-    const selectedCategory = categories.find(cat => cat.id === bookingData.vehicleCategory);
-    return selectedCategory?.models || [];
-  };
-
   const handleAddressSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookingData.pickupAddress || !bookingData.dropoffAddress) {
-      toast.error('Please enter both pickup and drop-off addresses');
+    if (!bookingData.pickupAddress) {
+      toast.error('Please enter a pickup address');
+      return;
+    }
+    if (!bookingData.dropoffAddress || bookingData.dropoffLat == null || bookingData.dropoffLng == null) {
+      toast.error('Please pin your drop-off on the map');
       return;
     }
     if (!bookingData.startDate) {
@@ -310,11 +109,7 @@ const RentalBookingPage: React.FC = () => {
   const handleVehicleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingData.vehicleCategory) {
-      toast.error('Please select a vehicle category');
-      return;
-    }
-    if (!bookingData.specificModel) {
-      toast.error('Please select a specific vehicle model');
+      toast.error('Please select a vehicle type');
       return;
     }
     setShowValidationModal(true);
@@ -339,7 +134,6 @@ const RentalBookingPage: React.FC = () => {
 
   const sendEmailNotification = async () => {
     try {
-      const selectedModel = getCurrentModels().find(model => model.id === bookingData.specificModel);
       const selectedCategory = getCurrentCategories().find(cat => cat.id === bookingData.vehicleCategory);
 
       if (bookingData.licenseImage) {
@@ -350,15 +144,20 @@ const RentalBookingPage: React.FC = () => {
         await convertFileToBase64(bookingData.aadharImage);
       }
 
+      const dropPin =
+        bookingData.dropoffLat != null && bookingData.dropoffLng != null
+          ? ` (${bookingData.dropoffLat.toFixed(5)}, ${bookingData.dropoffLng.toFixed(5)})`
+          : '';
+
       const emailParams = {
         logoUrl: `${window.location.origin}/kuber-cab-sb.png`,
         name: 'Customer', // You can add a name field to the form
         type: bookingData.vehicleType === 'car' ? 'Car Rental' : 'Bike Rental',
-        vehicleName: `${selectedCategory?.name || ''} - ${selectedModel?.name || ''}`,
+        vehicleName: `${selectedCategory?.name || ''} — model assigned by Kuber`,
         pickupAddress: bookingData.pickupAddress,
-        dropAddress: bookingData.dropoffAddress,
+        dropAddress: `${bookingData.dropoffAddress}${dropPin}`,
         pickupDateTime: `${bookingData.startDate} (Duration: ${bookingData.rentalDuration} day(s))`,
-        additionalInfo: `License: ${bookingData.licenseNumber || (bookingData.licenseImage ? 'Image provided' : 'Not provided')}, Aadhar: ${bookingData.aadharNumber || (bookingData.aadharImage ? 'Image provided' : 'Not provided')}, Price: ${selectedModel?.price || ''}`,
+        additionalInfo: `License: ${bookingData.licenseNumber || (bookingData.licenseImage ? 'Image provided' : 'Not provided')}, Aadhar: ${bookingData.aadharNumber || (bookingData.aadharImage ? 'Image provided' : 'Not provided')}`,
         // Boolean flags for document availability
         license_image: !!bookingData.licenseImage,
         aadhar_image: !!bookingData.aadharImage
@@ -391,23 +190,25 @@ const RentalBookingPage: React.FC = () => {
     // Send email notification
     sendEmailNotification();
 
-    const selectedModel = getCurrentModels().find(model => model.id === bookingData.specificModel);
     const selectedCategory = getCurrentCategories().find(cat => cat.id === bookingData.vehicleCategory);
+    const dropPin =
+      bookingData.dropoffLat != null && bookingData.dropoffLng != null
+        ? `\n📍 *Drop-off pin:* ${bookingData.dropoffLat.toFixed(5)}, ${bookingData.dropoffLng.toFixed(5)}`
+        : '';
 
     const message = `🚗 *Kuber.cab Rental Booking Request*
 
 📧 *Email Notification:* Sent to info.kubercab@gmail.com with documents
 
 📍 *Pickup Address:* ${bookingData.pickupAddress}
-📍 *Drop-off Address:* ${bookingData.dropoffAddress}
+📍 *Drop-off Address:* ${bookingData.dropoffAddress}${dropPin}
 📅 *Start Date:* ${bookingData.startDate}
 ⏰ *Duration:* ${bookingData.rentalDuration} day(s)
 
 🚙 *Vehicle Details:*
 • Type: ${bookingData.vehicleType.toUpperCase()}
 • Category: ${selectedCategory?.name}
-• Model: ${selectedModel?.name}
-• Price: ${selectedModel?.price}
+• Model: Assigned by Kuber after booking
 
 👤 *Customer Details:*
 ✅ Age: 21+ years confirmed
@@ -417,7 +218,7 @@ const RentalBookingPage: React.FC = () => {
 📧 *Documents:* Check email for uploaded license and Aadhar images
 🕐 *Booking Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
 
-Please confirm availability and provide further booking details.`;
+Please confirm availability and assign a vehicle model.`;
 
     const whatsappUrl = `https://wa.me/919898002124?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -427,61 +228,50 @@ Please confirm availability and provide further booking details.`;
   };
 
   return (
-    <div className="pt-20 pb-16 bg-gradient-to-br from-purple-50 via-white to-blue-50 min-h-screen">
+    <div className="min-h-screen bg-paper pb-16 pt-24">
       <Toaster position="top-right" />
       
-      {/* Header */}
-      <div className="container mx-auto px-4 md:px-6 mb-8">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mb-6">
-            <Car className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Rent a <span className="text-purple-700">Vehicle</span>
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose from our premium fleet of cars and bikes with easy booking process
-          </p>
-        </div>
+      <div className="site-container mb-10">
+        <p className="kicker mb-3">Rentals</p>
+        <h1 className="display text-4xl md:text-5xl">Rent a vehicle</h1>
+        <p className="mt-3 max-w-xl text-ink-muted">
+          Choose from our fleet of cars and bikes. Enter pickup, dates, and confirm.
+        </p>
 
-        {/* Enhanced Progress Steps */}
-        <div className="flex justify-center mt-8">
-          <div className="flex items-center space-x-4">
-            <div className={`flex items-center ${currentStep >= 1 ? 'text-purple-700' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 1 ? 'bg-purple-700 text-white shadow-lg' : 'bg-gray-300'}`}>
-                <MapPin className="h-5 w-5" />
+        <div className="mt-8 flex flex-wrap items-center gap-4 text-sm">
+            <div className={`flex items-center ${currentStep >= 1 ? 'text-purple-700' : 'text-ink-faint'}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold ${currentStep >= 1 ? 'bg-purple-700 text-white' : 'bg-line text-ink-muted'}`}>
+                1
               </div>
-              <span className="ml-3 font-medium">Trip Details</span>
+              <span className="ml-2 font-medium">Trip details</span>
             </div>
-            <div className={`w-12 h-0.5 ${currentStep >= 2 ? 'bg-purple-700' : 'bg-gray-300'}`}></div>
-            <div className={`flex items-center ${currentStep >= 2 ? 'text-purple-700' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 2 ? 'bg-purple-700 text-white shadow-lg' : 'bg-gray-300'}`}>
-                <Car className="h-5 w-5" />
+            <div className={`h-px w-10 ${currentStep >= 2 ? 'bg-purple-700' : 'bg-line'}`}></div>
+            <div className={`flex items-center ${currentStep >= 2 ? 'text-purple-700' : 'text-ink-faint'}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold ${currentStep >= 2 ? 'bg-purple-700 text-white' : 'bg-line text-ink-muted'}`}>
+                2
               </div>
-              <span className="ml-3 font-medium">Vehicle Selection</span>
+              <span className="ml-2 font-medium">Vehicle</span>
             </div>
-          </div>
         </div>
       </div>
 
       {/* Step 1: Enhanced Address & Trip Details */}
       {currentStep === 1 && (
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="site-container">
+          <form onSubmit={handleAddressSubmit} className="grid items-stretch gap-6 lg:grid-cols-2">
+            <div className="surface-card p-6 md:p-8">
               <div className="flex items-center mb-8">
                 <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl mr-4">
                   <MapPin className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Trip Details</h2>
-                  <p className="text-gray-600">Enter your pickup, drop-off locations and trip duration</p>
+                  <p className="text-gray-600">Enter pickup, drop-off, and trip duration. Pin drop-off on the map.</p>
                 </div>
               </div>
 
-              <form onSubmit={handleAddressSubmit} className="space-y-8">
-                {/* Address Section */}
-                <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-8">
+                <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
                       Pickup Location *
@@ -510,12 +300,12 @@ Please confirm availability and provide further booking details.`;
                         type="text"
                         required
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
-                        placeholder="Enter drop-off address"
+                        placeholder="Address fills in when you pin the map"
                         value={bookingData.dropoffAddress}
                         onChange={(e) => setBookingData(prev => ({ ...prev, dropoffAddress: e.target.value }))}
                       />
                     </div>
-                    <p className="text-xs text-gray-500">We'll collect the vehicle from this location</p>
+                    <p className="text-xs text-gray-500">We'll collect the vehicle from the map pin</p>
                   </div>
                 </div>
 
@@ -587,21 +377,37 @@ Please confirm availability and provide further booking details.`;
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-purple-700 to-blue-600 text-white py-4 px-8 rounded-xl font-semibold hover:from-purple-800 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
+                  className="btn-primary w-full py-4"
                 >
                   Continue to Vehicle Selection →
                 </button>
-              </form>
+              </div>
             </div>
-          </div>
+
+            <aside className="flex min-h-[28rem] flex-col lg:sticky lg:top-24 lg:min-h-[40rem]">
+              <p className="mb-3 text-sm font-semibold text-gray-700 lg:sr-only">Drop-off map</p>
+              <DropoffMap
+                lat={bookingData.dropoffLat}
+                lng={bookingData.dropoffLng}
+                onPick={({ address, lat, lng }) =>
+                  setBookingData((prev) => ({
+                    ...prev,
+                    dropoffAddress: address,
+                    dropoffLat: lat,
+                    dropoffLng: lng,
+                  }))
+                }
+              />
+            </aside>
+          </form>
         </div>
       )}
 
       {/* Step 2: Enhanced Vehicle Selection */}
       {currentStep === 2 && (
-        <div className="container mx-auto px-4 md:px-6">
+        <div className="site-container">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="surface-card p-6 md:p-8">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center">
                   <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl mr-4">
@@ -609,7 +415,7 @@ Please confirm availability and provide further booking details.`;
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Choose Your Vehicle</h2>
-                    <p className="text-gray-600">Select vehicle type, category, and specific model</p>
+                    <p className="text-gray-600">Select car or bike, then a type. Kuber assigns the exact model.</p>
                   </div>
                 </div>
                 <button
@@ -631,7 +437,7 @@ Please confirm availability and provide further booking details.`;
                           ? 'bg-white text-purple-700 shadow-md' 
                           : 'text-gray-600 hover:text-gray-800'
                       }`}
-                      onClick={() => setBookingData(prev => ({ ...prev, vehicleType: 'car', vehicleCategory: '', specificModel: '' }))}
+                      onClick={() => setBookingData(prev => ({ ...prev, vehicleType: 'car', vehicleCategory: '' }))}
                     >
                       <Car className="h-5 w-5 inline mr-2" />
                       Cars
@@ -643,7 +449,7 @@ Please confirm availability and provide further booking details.`;
                           ? 'bg-white text-purple-700 shadow-md' 
                           : 'text-gray-600 hover:text-gray-800'
                       }`}
-                      onClick={() => setBookingData(prev => ({ ...prev, vehicleType: 'bike', vehicleCategory: '', specificModel: '' }))}
+                      onClick={() => setBookingData(prev => ({ ...prev, vehicleType: 'bike', vehicleCategory: '' }))}
                     >
                       <Bike className="h-5 w-5 inline mr-2" />
                       Bikes
@@ -654,7 +460,7 @@ Please confirm availability and provide further booking details.`;
                 {/* Vehicle Category Selection */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Select {bookingData.vehicleType === 'car' ? 'Car' : 'Bike'} Category
+                    Select {bookingData.vehicleType === 'car' ? 'car' : 'bike'} type
                   </h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {getCurrentCategories().map((category) => (
@@ -666,7 +472,7 @@ Please confirm availability and provide further booking details.`;
                             ? 'border-purple-600 bg-purple-50'
                             : 'border-gray-200 hover:border-purple-300 hover:bg-purple-25'
                         }`}
-                        onClick={() => setBookingData(prev => ({ ...prev, vehicleCategory: category.id, specificModel: '' }))}
+                        onClick={() => setBookingData(prev => ({ ...prev, vehicleCategory: category.id }))}
                       >
                         <div className="text-2xl mb-2">{category.icon}</div>
                         <h4 className="font-semibold text-gray-900">{category.name}</h4>
@@ -676,94 +482,24 @@ Please confirm availability and provide further booking details.`;
                   </div>
                 </div>
 
-                {/* Specific Model Selection */}
                 {bookingData.vehicleCategory && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Choose Specific Model
-                    </h3>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {getCurrentModels().map((model) => (
-                        <div 
-                          key={model.id} 
-                          className={`border-2 rounded-xl overflow-hidden transition-all cursor-pointer ${
-                            bookingData.specificModel === model.id
-                              ? 'border-purple-600 shadow-lg'
-                              : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
-                          } ${!model.isAvailable ? 'opacity-75' : ''}`}
-                          onClick={() => model.isAvailable && setBookingData(prev => ({ ...prev, specificModel: model.id }))}
-                        >
-                          {/* Status Badges */}
-                          <div className="relative">
-                            {model.isPopular && (
-                              <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
-                                Popular
-                              </div>
-                            )}
-                            {model.discount && model.isAvailable && (
-                              <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
-                                {model.discount}
-                              </div>
-                            )}
-                            {!model.isAvailable && (
-                              <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex items-center justify-center z-10">
-                                <div className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold">
-                                  SOLD OUT
-                                </div>
-                              </div>
-                            )}
-                            
-                            <img
-                              src={model.image}
-                              alt={model.name}
-                              className="w-full h-48 object-cover"
-                            />
-                          </div>
-                          
-                          <div className="p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <h4 className="text-lg font-semibold text-gray-900">{model.name}</h4>
-                              <div className="text-right">
-                                {model.originalPrice && (
-                                  <div className="text-sm text-gray-500 line-through">{model.originalPrice}</div>
-                                )}
-                                <span className="text-lg font-bold text-purple-700">{model.price}</span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2">
-                              {model.features.map((feature, index) => (
-                                <span key={index} className={`px-2 py-1 rounded-full text-xs ${
-                                  model.isPopular ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
-                                }`}>
-                                  {feature}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {bookingData.specificModel && (
-                  <div className="bg-green-50 border border-green-200 p-4 rounded-xl">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                      <span className="text-green-800 font-medium">
-                        Selected: {getCurrentModels().find(m => m.id === bookingData.specificModel)?.name}
-                      </span>
+                  <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl">
+                    <div className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-purple-700 mr-2 mt-0.5 shrink-0" />
+                      <p className="text-sm text-purple-900">
+                        You selected {getCurrentCategories().find((c) => c.id === bookingData.vehicleCategory)?.name}.
+                        Kuber will send the specific model after this request.
+                      </p>
                     </div>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={!bookingData.specificModel}
+                  disabled={!bookingData.vehicleCategory}
                   className={`w-full py-4 px-8 rounded-xl font-semibold transition-all ${
-                    bookingData.specificModel
-                      ? 'bg-gradient-to-r from-purple-700 to-blue-600 text-white hover:from-purple-800 hover:to-blue-700 transform hover:scale-105 shadow-lg'
+                    bookingData.vehicleCategory
+                      ? 'bg-purple-700 text-white hover:bg-purple-800'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
@@ -929,7 +665,7 @@ Please confirm availability and provide further booking details.`;
                   </button>
                   <button
                     onClick={validateAndBook}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center shadow-lg"
+                    className="flex-1 btn-primary py-3"
                   >
                     <Phone className="h-5 w-5 mr-2" />
                     Send Email & WhatsApp

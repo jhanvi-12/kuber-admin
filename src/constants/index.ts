@@ -1,26 +1,29 @@
 import { ServiceType, TestimonialType, FAQType, CityType } from '../types';
 
+export const PLAY_STORE_RIDER = 'https://play.google.com/store/apps/details?id=com.app.kuberCab';
+export const PLAY_STORE_DRIVER = 'https://play.google.com/store/apps/details?id=com.app.kuberDriver';
+
 export const SERVICES: ServiceType[] = [
   {
-    id: 'bike',
-    title: 'Bike Rides',
-    description: 'Quick, affordable rides for solo travelers in busy traffic',
-    icon: 'bike',
-    benefits: ['Starting at ₹30/km', 'Beat the traffic', 'Available 24/7', 'Quick pickup']
+    id: 'moto',
+    title: 'Moto Rides',
+    description: 'Swift two-wheeler rides built for solo commuters who need to move fast through city traffic.',
+    icon: 'moto',
+    benefits: ['2–5 min average pickup', 'Navigate traffic effortlessly', 'Available around the clock', 'Eco-conscious travel']
   },
   {
     id: 'auto',
     title: 'Auto Rides',
-    description: 'Comfortable three-wheeler rides for 1-3 passengers',
+    description: 'Reliable three-wheeler transport with weather cover and room for everyday errands or short group trips.',
     icon: 'car',
-    benefits: ['No surge pricing', 'Starting at ₹50/km', 'Weather protection', 'Space for luggage']
+    benefits: ['Up to 3 passengers', 'Weather-protected cabin', 'Space for small luggage', 'Ideal for local errands']
   },
   {
     id: 'sedan',
     title: 'Cab Rides',
-    description: 'Premium car rides for comfort and style',
+    description: 'Premium sedan experiences with climate control and professional drivers for comfort-first journeys.',
     icon: 'car',
-    benefits: ['Air conditioned', 'Starting at ₹100/km', 'Comfortable seating', 'Ideal for families']
+    benefits: ['Fully air-conditioned', 'Spacious, comfortable seating', 'Verified professional drivers', 'Perfect for families & business']
   },
 ];
 
@@ -63,7 +66,7 @@ export const FAQS: FAQType[] = [
   {
     id: '1',
     question: 'How do I book a ride with Kuber.cab?',
-    answer: 'You can book a ride through our mobile app available on iOS and Android. Simply download the app, create an account, enter your pickup and drop-off locations, select your ride type, and confirm your booking.'
+    answer: 'You can book a ride through our mobile app on Google Play for Android. Download the app, create an account, enter your pickup and drop-off locations, select your ride type, and confirm your booking.'
   },
   {
     id: '2',
@@ -73,7 +76,7 @@ export const FAQS: FAQType[] = [
   {
     id: '3',
     question: 'How do I become a Kuber.cab driver partner?',
-    answer: 'To become a driver partner, you need to register through our app or website, submit required documents (driver\'s license, vehicle registration, insurance), complete a background check, and attend a brief orientation session.'
+    answer: 'Download the Kuber Pilot driver app from Google Play. Create your account and submit documents in the app. We do not take driver applications on this website.'
   },
   {
     id: '4',

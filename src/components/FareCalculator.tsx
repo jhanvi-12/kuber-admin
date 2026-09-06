@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Calculator, Bike, Car } from 'lucide-react';
+import { Calculator } from 'lucide-react';
+import { VehicleIcon } from './icons/RideVehicles';
 
 const FareCalculator: React.FC = () => {
   const [distance, setDistance] = useState<number>(5);
-  const [rideType, setRideType] = useState<string>('bike');
+  const [rideType, setRideType] = useState<string>('moto');
 
   const calculateFare = () => {
     let baseFare = 0;
     let perKmRate = 0;
 
     switch (rideType) {
-      case 'bike':
+      case 'moto':
         baseFare = 30;
         perKmRate = 15;
         break;
@@ -74,12 +75,12 @@ const FareCalculator: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     className={`flex items-center justify-center p-4 rounded-lg border ${
-                      rideType === 'bike' ? 'border-purple-700 bg-purple-100 text-purple-700' : 'border-gray-200 bg-white text-gray-700'
+                      rideType === 'moto' ? 'border-purple-700 bg-purple-100 text-purple-700' : 'border-gray-200 bg-white text-gray-700'
                     }`}
-                    onClick={() => setRideType('bike')}
+                    onClick={() => setRideType('moto')}
                   >
-                    <Bike className="h-5 w-5 mr-2" />
-                    <span>Bike</span>
+                    <VehicleIcon kind="bike" size={28} className="mr-2" />
+                    <span>Moto</span>
                   </button>
                   <button 
                     className={`flex items-center justify-center p-4 rounded-lg border ${
@@ -87,7 +88,7 @@ const FareCalculator: React.FC = () => {
                     }`}
                     onClick={() => setRideType('auto')}
                   >
-                    <Car className="h-5 w-5 mr-2" />
+                    <VehicleIcon kind="auto" size={28} className="mr-2" />
                     <span>Auto</span>
                   </button>
                   <button 
@@ -96,7 +97,7 @@ const FareCalculator: React.FC = () => {
                     }`}
                     onClick={() => setRideType('sedan')}
                   >
-                    <Car className="h-5 w-5 mr-2" />
+                    <VehicleIcon kind="cab" size={28} className="mr-2" />
                     <span>Sedan</span>
                   </button>
                   <button 
@@ -105,10 +106,8 @@ const FareCalculator: React.FC = () => {
                     }`}
                     onClick={() => setRideType('suv')}
                   >
-                    <Car className="h-5 w-5 mr-2" />
+                    <VehicleIcon kind="cab" size={28} className="mr-2" />
                     <span>SUV</span>
-                  </button>
-                </div>
               </div>
             </div>
 

@@ -1,66 +1,46 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { FAQS } from '../constants';
 
 const FAQ: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-
-  const toggleFAQ = (index: number) => {
-    if (openIndex === index) {
-      setOpenIndex(null);
-    } else {
-      setOpenIndex(index);
-    }
-  };
+  const preview = FAQS.slice(0, 5);
 
   return (
-    <section id="faq" className="py-16 bg-purple-50">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Frequently Asked <span className="text-purple-700">Questions</span>
+    <section id="faq" className="bg-paper section-pad">
+      <div className="site-container grid gap-14 lg:grid-cols-[minmax(0,24rem)_1fr] lg:gap-24">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl lg:text-5xl">
+            Questions, answered
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Got questions? We've got answers. If you can't find what you're looking for, feel free to contact our support team.
+          <p className="mt-5 text-base leading-relaxed text-ink-muted md:text-lg">
+            Booking, payments, driving, and safety. Need more detail? Open the full help page.
           </p>
+          <Link to="/faq" className="btn-secondary mt-10">
+            View all FAQs
+          </Link>
         </div>
 
-        <div className="max-w-3xl mx-auto">
-          {FAQS.map((faq, index) => (
-            <div 
-              key={faq.id}
-              className="mb-4 bg-white rounded-lg shadow-sm overflow-hidden transition-all"
-            >
-              <button
-                className="w-full text-left p-6 focus:outline-none flex justify-between items-center"
-                onClick={() => toggleFAQ(index)}
-              >
-                <h3 className="font-semibold text-lg text-gray-900">{faq.question}</h3>
-                {openIndex === index ? 
-                  <ChevronUp className="h-5 w-5 text-purple-600" /> : 
-                  <ChevronDown className="h-5 w-5 text-purple-600" />
-                }
-              </button>
-
-              <div 
-                className={`px-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                  openIndex === index ? 'max-h-96 pb-6' : 'max-h-0'
-                }`}
-              >
-                <p className="text-gray-700">{faq.answer}</p>
+        <div className="divide-y divide-line border-y border-line">
+          {preview.map((faq, index) => {
+            const open = openIndex === index;
+            return (
+              <div key={faq.id}>
+                <button
+                  type="button"
+                      className="flex w-full items-start justify-between gap-4 py-7 text-left"
+                  onClick={() => setOpenIndex(open ? null : index)}
+                >
+                  <span className="font-semibold text-ink">{faq.question}</span>
+                  <ChevronDown
+                    className={`mt-1 h-5 w-5 shrink-0 text-ink-faint transition-transform ${open ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {open && <p className="pb-5 pr-8 text-sm leading-relaxed text-ink-muted">{faq.answer}</p>}
               </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12 text-center">
-          <p className="text-gray-600 mb-4">Still have questions?</p>
-          <a 
-            href="#contact" 
-            className="py-3 px-8 bg-purple-700 text-white rounded-full font-medium hover:bg-purple-800 transition-colors inline-block"
-          >
-            Contact Support
-          </a>
+            );
+          })}
         </div>
       </div>
     </section>

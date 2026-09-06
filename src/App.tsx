@@ -11,6 +11,8 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsConditionsPage from './pages/TermsConditionsPage';
+import DriverPrivacyPolicyPage from './pages/DriverPrivacyPolicyPage';
+import DriverTermsConditionsPage from './pages/DriverTermsConditionsPage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import RentalBookingPage from './pages/RentalBookingPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -21,8 +23,15 @@ const ScrollToTop: React.FC = () => {
   const location = useLocation();
   
   React.useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.slice(1);
+      const jump = () => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      requestAnimationFrame(jump);
+      window.setTimeout(jump, 80);
+      return;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [location.pathname]);
+  }, [location.pathname, location.hash]);
   
   return null;
 };
@@ -46,7 +55,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-paper">
         <ScrollToTop />
         <Layout>
           <Routes>
@@ -59,6 +68,8 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+            <Route path="/driver/privacy-policy" element={<DriverPrivacyPolicyPage />} />
+            <Route path="/driver/terms-conditions" element={<DriverTermsConditionsPage />} />
             <Route path="/cookie-policy" element={<CookiePolicyPage />} />
             <Route path="/rental-booking" element={<RentalBookingPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />

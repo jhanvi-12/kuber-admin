@@ -4,6 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        ink: {
+          DEFAULT: '#16141c',
+          muted: '#5c5866',
+          faint: '#8b8794',
+        },
+        paper: {
+          DEFAULT: '#f7f5f1',
+          warm: '#efebe4',
+        },
+        line: '#e6e1d8',
         purple: {
           50: '#f5f3ff',
           100: '#ede9fe',
@@ -19,13 +29,20 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
+      },
+      maxWidth: {
+        site: '1280px',
+        prose: '42rem',
+      },
+      boxShadow: {
+        card: '0 1px 2px rgba(22, 20, 28, 0.06)',
+        lift: '0 12px 32px rgba(22, 20, 28, 0.08)',
       },
       spacing: {
-        '128': '32rem',
-      },
-      animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        18: '4.5rem',
+        22: '5.5rem',
       },
     },
   },

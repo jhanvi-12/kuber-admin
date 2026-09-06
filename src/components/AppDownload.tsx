@@ -1,5 +1,7 @@
 import React from 'react';
-import { Apple, CheckCircle, Smartphone } from 'lucide-react';
+import { CheckCircle, Smartphone } from 'lucide-react';
+import GooglePlayIcon from './icons/GooglePlayIcon';
+import { PLAY_STORE_RIDER } from '../constants';
 
 const AppDownload: React.FC = () => {
   const features = [
@@ -59,33 +61,20 @@ const AppDownload: React.FC = () => {
               ))}
             </div>
             
-            <p className="text-gray-600 mb-4">Download now on:</p>
+            <p className="text-gray-600 mb-4">Download now on Google Play:</p>
             
-            <div className="flex flex-col sm:flex-row gap-4">
-              <a 
-                href="#app-store" 
-                className="flex items-center justify-center py-3 px-6 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors"
-              >
-                <Apple className="h-6 w-6 mr-2" />
-                <div>
-                  <div className="text-xs">Download on the</div>
-                  <div className="text-sm font-semibold">App Store</div>
-                </div>
-              </a>
-              
-              <a 
-                href="#play-store" 
-                className="flex items-center justify-center py-3 px-6 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors"
-              >
-                <svg className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3.609 1.814L13.792 12 3.609 22.186c-.181.181-.29.423-.29.681V1.133c0 .258.109.5.29.681zm10.831 11.852l2.769-2.769L5.826 4.696l8.614 8.97zm0-3.34L5.826 19.304l11.383-6.201-2.769-2.777zm4.596-2.753l-3.838 2.083 3.838 2.083c.437.238.708.687.708 1.182s-.271.944-.708 1.182l-3.838 2.083 3.838 2.083c.437.238.708.687.708 1.182 0 .748-.607 1.355-1.355 1.355-.245 0-.485-.067-.697-.193l-14.027-7.63c-.457-.248-.739-.725-.739-1.244 0-.519.282-.996.739-1.244l14.027-7.63c.212-.126.452-.193.697-.193.748 0 1.355.607 1.355 1.355 0 .495-.271.944-.708 1.182z" />
-                </svg>
-                <div>
-                  <div className="text-xs">GET IT ON</div>
-                  <div className="text-sm font-semibold">Google Play</div>
-                </div>
-              </a>
-            </div>
+            <a 
+              href={PLAY_STORE_RIDER}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center py-3 px-6 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors max-w-xs"
+            >
+              <GooglePlayIcon className="mr-2 h-6 w-6" />
+              <div>
+                <div className="text-xs">GET IT ON</div>
+                <div className="text-sm font-semibold">Google Play</div>
+              </div>
+            </a>
           </div>
         </div>
       </div>

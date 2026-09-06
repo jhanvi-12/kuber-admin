@@ -1,30 +1,26 @@
 import React from 'react';
 import Hero from '../components/Hero';
+import Explore from '../components/Explore';
 import Services from '../components/Services';
-import RentalOffers from '../components/RentalOffers';
+import HowItWorks from '../components/HowItWorks';
+import Safety from '../components/Safety';
 import DriverPartner from '../components/DriverPartner';
-import AppDownload from '../components/AppDownload';
-import Cities from '../components/Cities';
-import Testimonials from '../components/Testimonials';
-import FareCalculator from '../components/FareCalculator';
+import DriverCards from '../components/DriverCards';
 import FAQ from '../components/FAQ';
-import Contact from '../components/Contact';
-import About from '../components/About';
+import FinalCta from '../components/FinalCta';
 
 const Home: React.FC = () => {
   return (
     <>
       <Hero />
+      <Explore />
       <Services />
-      <RentalOffers />
+      <HowItWorks />
+      <Safety />
       <DriverPartner />
-      <FareCalculator />
-      <AppDownload />
-      <Testimonials />
-      <Cities />
-      <About />
+      <DriverCards />
       <FAQ />
-      <Contact />
+      <FinalCta />
     </>
   );
 };

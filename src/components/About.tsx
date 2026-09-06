@@ -5,16 +5,16 @@ const About: React.FC = () => {
   const stats = [
     { label: 'Active Users', value: '1M+', icon: Users },
     { label: 'Cities', value: '12+', icon: Target },
-    { label: 'Rides Completed', value: '10M+', icon: Award },
+    // { label: 'Rides Completed', value: '10M+', icon: Award },
     { label: 'Driver Partners', value: '100K+', icon: Shield },
   ];
 
   const team = [
     {
-      name: 'Sarah Anderson',
+      name: 'shivang . R . brahmbhatt',
       role: 'CEO & Co-founder',
-      image: 'https://images.pexels.com/photos/2381069/pexels-photo-2381069.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      bio: '15+ years of experience in transportation and technology sectors.'
+      image: '/shivang-brahmbhatt.png',
+      bio: 'Leading Kuber.cab with a vision for safe, reliable mobility across Gujarat.'
     },
     {
       name: 'Michael Chen',
@@ -93,7 +93,7 @@ const About: React.FC = () => {
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+                  className="w-36 h-44 rounded-xl mx-auto mb-4 object-cover object-top"
                 />
                 <h3 className="text-xl font-semibold text-gray-900 mb-1">{member.name}</h3>
                 <p className="text-purple-700 mb-2">{member.role}</p>
