@@ -13,6 +13,7 @@ export interface AdminLoginResponse {
 export interface ApproveRejectDriverPayload {
   driver_id: number;
   reason: string;
+  ride_type: string;
   status: number;
 }
 
@@ -30,4 +31,25 @@ export interface DriverListResponse {
   totalPages?: number;
   currentPage?: number;
   [key: string]: any;
+}
+
+export interface DriverDetails {
+  id: number;
+  full_name: string;
+  email: string;
+  mobile: string;
+  profile_image?: string;
+  license_front_image?: string;
+  license_back_image?: string;
+  rc_image?: string;
+  ride_type?: string;
+  vehicle_type?: string;
+  vehicle_image?: string;
+  vehicle_insurance_image?: string;
+}
+
+export interface DriverDetailsResponse {
+  status: string;
+  data: DriverDetails;
+  message?: string;
 }

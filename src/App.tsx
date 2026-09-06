@@ -17,11 +17,13 @@ import CookiePolicyPage from './pages/CookiePolicyPage';
 import RentalBookingPage from './pages/RentalBookingPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import NotFoundPage from './pages/NotFoundPage';
+import { AdminThemeProvider, useAdminTheme } from './contexts/AdminThemeContext';
+import './styles/admin-theme.css';
 
-// Component to handle scroll to top on route change
 const ScrollToTop: React.FC = () => {
   const location = useLocation();
-  
+
   React.useEffect(() => {
     if (location.hash) {
       const id = location.hash.slice(1);
@@ -36,17 +38,14 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
-// Component to conditionally render header and footer
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
-  
+
   return (
     <>
       {!isAdminPage && <Header />}
-      <main>
-        {children}
-      </main>
+      <main>{children}</main>
       {!isAdminPage && <Footer />}
     </>
   );
@@ -79,6 +78,37 @@ function App() {
       </div>
     </Router>
   );
-}
+ }
+
+const AppShell: React.FC = () => {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const { isDark } = useAdminTheme();
+
+  return (
+    <div className={`min-h-screen ${isAdminPage ? (isDark ? 'bg-black' : 'bg-gray-50') : 'bg-white'}`}>
+      <ScrollToTop />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/drive-with-us" element={<DriveWithUsPage />} />
+          <Route path="/cities" element={<CitiesPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+          <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+          <Route path="/rental-booking" element={<RentalBookingPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/admin/drivers" element={<AdminDashboardPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Layout>
+    </div>
+  );
+};
 
 export default App;
