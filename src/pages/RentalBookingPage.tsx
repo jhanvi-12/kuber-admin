@@ -4,6 +4,7 @@ import { MapPin, Car, Bike, Upload, Phone, CheckCircle, User, CreditCard, Chevro
 import toast, { Toaster } from 'react-hot-toast';
 import emailjs from '@emailjs/browser';
 import DropoffMap from '../components/DropoffMap';
+import { IMAGES } from '../constants/images';
 
 interface BookingData {
   pickupAddress: string;
@@ -150,7 +151,7 @@ const RentalBookingPage: React.FC = () => {
           : '';
 
       const emailParams = {
-        logoUrl: `${window.location.origin}/kuber-cab-sb.png`,
+        logoUrl: IMAGES.kuberCabLogo,
         name: 'Customer', // You can add a name field to the form
         type: bookingData.vehicleType === 'car' ? 'Car Rental' : 'Bike Rental',
         vehicleName: `${selectedCategory?.name || ''} — model assigned by Kuber`,

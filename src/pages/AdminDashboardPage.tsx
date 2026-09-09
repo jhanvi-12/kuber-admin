@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { adminService } from '../services/adminService';
 import { getAuthToken, removeAuthToken } from '../services/apiClient';
 import { DriverDetails } from '../types/admin';
+import { IMAGES } from '../constants/images';
 import { 
   Users, 
   Car, 
@@ -627,7 +628,7 @@ const AdminDashboardPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img src="/kuber-cab-sb.png" alt="Kuber.cab" className="h-8 w-auto mr-3" />
+              <img src={IMAGES.kuberCabLogo} alt="Kuber.cab" className="h-8 w-auto mr-3" />
               <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
             </div>
             <div className="flex items-center gap-2">

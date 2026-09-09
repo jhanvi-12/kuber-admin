@@ -4,20 +4,21 @@ import { CheckCircle, Clock, ShieldCheck, Sparkles, Wallet } from 'lucide-react'
 import { SERVICES } from '../constants';
 import { VehicleIcon, type RideKind } from '../components/icons/RideVehicles';
 import PageHero from '../components/PageHero';
+import { IMAGES } from '../constants/images';
 
 const serviceDetails = {
   moto: {
-    image: '/kuber-ride-moto.jpg',
+    image: IMAGES.kuberRideMoto,
     features: ['Quick pickup in 2–5 minutes', 'Navigate through traffic easily', 'Eco-friendly transportation', 'Ideal for solo commuters'],
     idealFor: ['Solo travelers', 'Short distance trips', 'Quick errands', 'Avoiding traffic jams'],
   },
   auto: {
-    image: '/kuber-ride-auto.jpg',
+    image: IMAGES.kuberRideAuto,
     features: ['Weather protection', 'Space for small luggage', 'Comfortable seating for 3', 'Reliable local routes'],
     idealFor: ['Small groups', 'Shopping trips', 'Airport transfers', 'Rainy weather travel'],
   },
   sedan: {
-    image: '/kuber-ride-cab.jpg',
+    image: IMAGES.kuberRideCab,
     features: ['Air conditioning', 'Premium comfort', 'Professional drivers', 'Spacious interiors'],
     idealFor: ['Business meetings', 'Family trips', 'Long distance travel', 'Special occasions'],
   },

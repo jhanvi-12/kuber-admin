@@ -1,12 +1,13 @@
 import React from 'react';
+import { IMAGES } from '../../constants/images';
 
 export type RideKind = 'bike' | 'auto' | 'cab';
 export type VehicleVariant = 'card' | 'avatar';
 
 export const VEHICLE_ICONS: Record<RideKind, string> = {
-  bike: '/icon-3d-bike.png?v=3',
-  auto: '/icon-3d-auto.png?v=3',
-  cab: '/icon-3d-cab.png?v=3',
+  bike: IMAGES.icon3dBike,
+  auto: IMAGES.icon3dAuto,
+  cab: IMAGES.icon3dCab,
 };
 
 interface VehicleIconProps {

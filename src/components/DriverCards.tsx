@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { PLAY_STORE_DRIVER } from '../constants';
+import { IMAGES } from '../constants/images';
 
 const cards = [
   {
@@ -10,7 +11,7 @@ const cards = [
     cta: 'Get the Kuber Pilot app',
     href: PLAY_STORE_DRIVER,
     external: true,
-    image: '/driver-card-schedule.png',
+    image: IMAGES.driverCardSchedule,
     alt: 'Kuber Pilot in an auto',
   },
   {
@@ -19,7 +20,7 @@ const cards = [
     cta: 'Get details',
     href: '/drive-with-us#how-to-start',
     external: false,
-    image: '/driver-card-online.png',
+    image: IMAGES.driverCardOnline,
     alt: 'Going online on a bike ride',
   },
   {
@@ -28,7 +29,7 @@ const cards = [
     cta: 'See how to start',
     href: '/drive-with-us#how-to-start',
     external: false,
-    image: '/driver-card-payout.png',
+    image: IMAGES.driverCardPayout,
     alt: 'Weekly earnings on a phone',
   },
 ];

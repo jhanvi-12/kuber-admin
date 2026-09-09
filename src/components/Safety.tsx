@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck, MapPinned, Siren, Share2 } from 'lucide-react';
+import { IMAGES } from '../constants/images';
 
 const features = [
   { icon: ShieldCheck, title: 'Verified drivers', text: 'Background checks before a driver goes online.' },
@@ -14,7 +15,7 @@ const Safety: React.FC = () => {
       <div className="site-container grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <div className="overflow-hidden rounded-3xl">
           <img
-            src="/kuber-safety.png"
+            src={IMAGES.kuberSafety}
             alt="Live trip tracking and safety tools in the Kuber Cab app"
             className="aspect-[5/4] w-full object-cover object-center"
           />

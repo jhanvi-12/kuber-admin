@@ -5,6 +5,7 @@ import GooglePlayButton from '../components/GooglePlayButton';
 import StartSlider from '../components/StartSlider';
 import DriverCards from '../components/DriverCards';
 import { PLAY_STORE_DRIVER } from '../constants';
+import { IMAGES } from '../constants/images';
 
 const DriveWithUsPage: React.FC = () => {
   const requirements = [
@@ -20,28 +21,28 @@ const DriveWithUsPage: React.FC = () => {
       n: '01',
       title: 'Download',
       text: 'Install Kuber Pilot from Google Play. You cannot apply from this website.',
-      image: '/driver-step-download.png',
+      image: IMAGES.driverStepDownload,
       alt: 'Download the Kuber Pilot driver app',
     },
     {
       n: '02',
       title: 'Register',
       text: 'Create your account and upload documents in the driver app.',
-      image: '/driver-step-register.png',
+      image: IMAGES.driverStepRegister,
       alt: 'Register and upload documents in the app',
     },
     {
       n: '03',
       title: 'Verify',
       text: 'Complete checks and orientation in the app.',
-      image: '/driver-step-verify.png',
+      image: IMAGES.driverStepVerify,
       alt: 'Verification complete in Kuber Pilot',
     },
     {
       n: '04',
       title: 'Go online',
       text: 'Start accepting trip requests as a Kuber Pilot.',
-      image: '/driver-step-online.png',
+      image: IMAGES.driverStepOnline,
       alt: 'Go online and accept trips',
     },
   ];
@@ -105,7 +106,7 @@ const DriveWithUsPage: React.FC = () => {
           </div>
           <div className="overflow-hidden rounded-lg">
             <img
-              src="/cab-driver-hero.png"
+              src={IMAGES.cabDriverHero}
               alt="Kuber Pilot driver"
               className="aspect-[5/4] w-full object-cover"
             />

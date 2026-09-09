@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users, Award, Shield, Target } from 'lucide-react';
+import { IMAGES } from '../constants/images';
 
 const About: React.FC = () => {
   const stats = [
@@ -13,7 +14,7 @@ const About: React.FC = () => {
     {
       name: 'shivang . R . brahmbhatt',
       role: 'CEO & Co-founder',
-      image: '/shivang-brahmbhatt.png',
+      image: IMAGES.shivangBrahmbhatt,
       bio: 'Leading Kuber.cab with a vision for safe, reliable mobility across Gujarat.'
     },
     {

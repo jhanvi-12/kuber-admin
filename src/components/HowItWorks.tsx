@@ -1,25 +1,26 @@
 import React from 'react';
+import { IMAGES } from '../constants/images';
 
 const steps = [
   {
     n: '1',
     title: 'Open the app',
     text: 'Enter pickup and drop, then choose moto, auto, or cab.',
-    image: '/how-step-open-app.png',
+    image: IMAGES.howStepOpenApp,
     alt: 'Booking a ride in the Kuber Cab app',
   },
   {
     n: '2',
     title: 'Get a driver',
     text: 'A nearby verified driver is matched to your trip.',
-    image: '/how-step-get-driver.png',
+    image: IMAGES.howStepGetDriver,
     alt: 'Verified Kuber driver arriving for pickup',
   },
   {
     n: '3',
     title: 'Ride & pay',
     text: 'Track the journey. Pay with UPI, card, or cash.',
-    image: '/how-step-ride-pay.png',
+    image: IMAGES.howStepRidePay,
     alt: 'Paying for a Kuber ride from the phone',
   },
 ];

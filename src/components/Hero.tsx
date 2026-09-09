@@ -1,4 +1,5 @@
 import React from 'react';
+import { IMAGES } from '../constants/images';
 
 const Hero: React.FC = () => {
   return (
@@ -24,7 +25,7 @@ const Hero: React.FC = () => {
 
       <div className="hero-rapido-art relative h-[300px] w-full sm:h-[380px] lg:absolute lg:inset-y-0 lg:right-0 lg:h-auto lg:w-[55%]">
         <img
-          src="/kuber-hero-composite.png"
+          src={IMAGES.kuberHeroComposite}
           alt="Kuber Cab bike, auto and cab"
           className="h-full w-full object-cover object-[center_center]"
         />

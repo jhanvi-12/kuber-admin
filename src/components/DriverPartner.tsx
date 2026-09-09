@@ -1,6 +1,7 @@
 import React from 'react';
 import GooglePlayButton from './GooglePlayButton';
 import { PLAY_STORE_DRIVER } from '../constants';
+import { IMAGES } from '../constants/images';
 
 const DriverPartner: React.FC = () => {
   return (
@@ -16,7 +17,7 @@ const DriverPartner: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <img
-              src="/kuber-ride-cab.jpg"
+              src={IMAGES.kuberRideCab}
               alt="Kuber Cab driver"
               className="aspect-[16/10] w-full object-cover lg:aspect-auto lg:h-full lg:min-h-[460px]"
             />

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Award, Users } from 'lucide-react';
 import PageHero from '../components/PageHero';
+import { IMAGES } from '../constants/images';
 
 const values = [
   {
@@ -71,7 +72,7 @@ const AboutPage: React.FC = () => {
       <section className="section-pad bg-white">
         <div className="site-container grid items-center gap-10 md:grid-cols-[auto_1fr] md:gap-12">
           <img
-            src="/shivang-brahmbhatt.png?v=2"
+            src={IMAGES.shivangBrahmbhatt}
             alt="Shivang R. Brahmbhatt"
             className="h-56 w-44 rounded-2xl object-cover object-[center_18%] shadow-card md:h-64 md:w-52"
           />
